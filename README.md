@@ -1,1 +1,3 @@
-# ai-rag-chatbot-ai-rag-chatbot-49411-49472-pre_prod
+# Project Repository
+
+This is the initial README file for the project.
