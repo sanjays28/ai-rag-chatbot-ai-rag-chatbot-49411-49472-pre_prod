@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PDF Chat Assistant</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>PDF Chat Assistant</h1>
+        </header>
+        
+        <main>
+            <div class="upload-section" id="upload-section">
+                <div class="upload-box" id="upload-box">
+                    <div class="upload-icon">📄</div>
+                    <p>Drag and drop your PDF here or</p>
+                    <input type="file" id="file-input" accept=".pdf" hidden>
+                    <button class="upload-btn" onclick="document.getElementById('file-input').click()" aria-label="Choose PDF file to upload">Choose File</button>
+                </div>
+                <div class="upload-progress" id="upload-progress">
+                    <div class="upload-progress-bar" id="upload-progress-bar"></div>
+                </div>
+                <div class="upload-status" id="upload-status"></div>
+                <div class="file-info" id="file-info"></div>
+            </div>
+
+            <div class="chat-section">
+                <div class="chat-messages" id="chat-messages">
+                    <div class="welcome-message">
+                        <p>Welcome! Upload a PDF to start chatting about its contents.</p>
+                    </div>
+                </div>
+                
+                <div class="chat-input-container">
+                    <textarea id="user-input" placeholder="Type your message here..." rows="1" aria-label="Chat message input"></textarea>
+                    <button id="send-btn" disabled aria-label="Send message" aria-disabled="true">Send</button>
+                </div>
+            </div>
+        </main>
+
+        <div class="error-container" id="error-container"></div>
+        <div class="loading-indicator" id="loading-indicator">
+            <div class="spinner"></div>
+            <p>Processing...</p>
+        </div>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+</body>
+</html>
