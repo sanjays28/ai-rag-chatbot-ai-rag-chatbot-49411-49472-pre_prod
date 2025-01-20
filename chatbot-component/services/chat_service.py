@@ -1,6 +1,8 @@
 """Chat service for handling AI-powered responses."""
 import os
 from typing import Optional
+import time
+from datetime import datetime, timedelta
 import openai
 from config import Config
 
@@ -11,6 +13,8 @@ class ChatService:
         """Initialize the chat service with OpenAI API key."""
         openai.api_key = Config.OPENAI_API_KEY
         self.context = ""
+        self.request_timestamps = []
+        self.rate_limit = 10  # requests per minute
     
     # PUBLIC_INTERFACE
     def set_context(self, text: str) -> None:
@@ -22,6 +26,49 @@ class ChatService:
         """
         self.context = text
     
+    # PUBLIC_INTERFACE
+    def check_rate_limit(self) -> bool:
+        """
+        Check if the request is within rate limits.
+        
+        Returns:
+            bool: True if request is allowed, False if rate limit exceeded
+        """
+        now = datetime.now()
+        # Remove timestamps older than 1 minute
+        self.request_timestamps = [ts for ts in self.request_timestamps 
+                                 if ts > now - timedelta(minutes=1)]
+        
+        if len(self.request_timestamps) >= self.rate_limit:
+            return False
+        
+        self.request_timestamps.append(now)
+        return True
+
+    # PUBLIC_INTERFACE
+    def generate_response(self, query: str, context: str) -> str:
+        """
+        Generate a response using OpenAI's API.
+        
+        Args:
+            query: The user's question
+            context: The context from PDF
+            
+        Returns:
+            str: The generated response
+            
+        Raises:
+            Exception: If there's an error in generating the response
+        """
+        response = openai.ChatCompletion.create(
+            model="gpt-3.5-turbo",
+            messages=[
+                {"role": "system", "content": f"Context from PDF: {context}"},
+                {"role": "user", "content": query}
+            ]
+        )
+        return response.choices[0].message.content
+
     # PUBLIC_INTERFACE
     def get_response(self, query: str) -> tuple[str, Optional[str]]:
         """
@@ -39,21 +86,11 @@ class ChatService:
             if not self.context:
                 return "", "No context available. Please upload a PDF first."
             
-            # Prepare the prompt with context
-            prompt = f"Context:\n{self.context}\n\nQuestion: {query}\n\nAnswer:"
+            if not self.check_rate_limit():
+                return "", "Rate limit exceeded. Please try again later."
             
-            # Get response from OpenAI
-            response = openai.Completion.create(
-                engine="text-davinci-003",
-                prompt=prompt,
-                max_tokens=150,
-                temperature=0.7,
-                top_p=1.0,
-                frequency_penalty=0.0,
-                presence_penalty=0.0
-            )
-            
-            return response.choices[0].text.strip(), None
+            response = self.generate_response(query, self.context)
+            return response, None
         except Exception as e:
             return "", f"Error generating response: {str(e)}"
     

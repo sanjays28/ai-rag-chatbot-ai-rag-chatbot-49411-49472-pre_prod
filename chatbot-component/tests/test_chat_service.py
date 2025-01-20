@@ -17,8 +17,9 @@ def mock_openai_response():
 
 def test_generate_response(mock_openai_response):
     """Test chat response generation."""
+    chat_service = ChatService()
     with patch('openai.ChatCompletion.create', return_value=mock_openai_response):
-        response = ChatService.generate_response("Test question", "Test context")
+        response = chat_service.generate_response("Test question", "Test context")
         assert response == "This is a test response"
         
         # Verify OpenAI API was called with correct parameters
@@ -32,7 +33,8 @@ def test_generate_response(mock_openai_response):
 
 def test_generate_response_error():
     """Test error handling in response generation."""
+    chat_service = ChatService()
     with patch('openai.ChatCompletion.create', side_effect=Exception("API Error")):
         with pytest.raises(Exception) as exc_info:
-            ChatService.generate_response("Test question", "Test context")
-        assert "Error generating response: API Error" in str(exc_info.value)
+            chat_service.generate_response("Test question", "Test context")
+        assert str(exc_info.value) == "API Error"

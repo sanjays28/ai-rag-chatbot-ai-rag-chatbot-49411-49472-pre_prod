@@ -1,4 +1,6 @@
 import pytest
+from io import BytesIO
+from werkzeug.datastructures import FileStorage
 from app import PDFProcessor
 import os
 
@@ -19,24 +21,30 @@ def test_extract_text(sample_pdf):
     processor = PDFProcessor()
     
     # Test with valid PDF
-    text = processor.extract_text(sample_pdf)
-    assert text is not None
-    assert isinstance(text, str)
-    assert "Test PDF" in text
-    
-    # Test with non-existent file
-    with pytest.raises(Exception) as exc_info:
-        processor.extract_text('nonexistent.pdf')
-    assert "Error extracting text from PDF" in str(exc_info.value)
+    with open(sample_pdf, 'rb') as f:
+        file_storage = FileStorage(
+            stream=BytesIO(f.read()),
+            filename='test.pdf',
+            content_type='application/pdf'
+        )
+        text, error = processor.extract_text(file_storage)
+        assert error is None, f"Error occurred: {error}"
+        assert isinstance(text, str)
+        assert len(text) > 0
+        assert "Test PDF" in text
 
 def test_extract_text_invalid_pdf(tmp_path):
     """Test PDF text extraction with invalid PDF file."""
     processor = PDFProcessor()
     
     # Create invalid PDF file
-    invalid_pdf = tmp_path / "invalid.pdf"
-    invalid_pdf.write_text("This is not a PDF file")
+    invalid_content = b"This is not a PDF file"
+    file_storage = FileStorage(
+        stream=BytesIO(invalid_content),
+        filename='invalid.pdf',
+        content_type='application/pdf'
+    )
     
-    with pytest.raises(Exception) as exc_info:
-        processor.extract_text(str(invalid_pdf))
-    assert "Error extracting text from PDF" in str(exc_info.value)
+    text, error = processor.extract_text(file_storage)
+    assert error is not None
+    assert "Error extracting text from PDF" in error

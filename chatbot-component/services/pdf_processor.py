@@ -1,11 +1,27 @@
 """PDF processing service for text extraction."""
 import os
-from typing import Optional
+from typing import Optional, Set
 from PyPDF2 import PdfReader
 from werkzeug.datastructures import FileStorage
 
 class PDFProcessor:
     """Handles PDF file processing and text extraction."""
+    
+    def __init__(self):
+        """Initialize PDFProcessor with allowed extensions."""
+        self._allowed_extensions: Set[str] = {'pdf'}
+    
+    def allowed_file(self, filename: str) -> bool:
+        """
+        Check if the file extension is allowed.
+        
+        Args:
+            filename: Name of the file to check
+            
+        Returns:
+            bool: True if file extension is allowed, False otherwise
+        """
+        return '.' in filename and filename.rsplit('.', 1)[1].lower() in self._allowed_extensions
     
     # PUBLIC_INTERFACE
     def extract_text(self, file: FileStorage) -> tuple[str, Optional[str]]:
@@ -21,10 +37,22 @@ class PDFProcessor:
             - error_message: Error message if any, None otherwise
         """
         try:
+            if not self.allowed_file(file.filename):
+                return "", "Invalid file type. Only PDF files are allowed."
+            
             reader = PdfReader(file)
+            if len(reader.pages) == 0:
+                return "", "PDF file is empty"
+                
             text = ""
             for page in reader.pages:
-                text += page.extract_text() + "\n"
+                page_text = page.extract_text()
+                if page_text:
+                    text += page_text + "\n"
+                    
+            if not text.strip():
+                return "", "No text could be extracted from the PDF"
+                
             return text.strip(), None
         except Exception as e:
             return "", f"Error extracting text from PDF: {str(e)}"
